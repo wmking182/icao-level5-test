@@ -673,6 +673,20 @@
   }
 
   .warning-box strong { color: var(--warning); }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+  @keyframes dots {
+    0% { content: ''; }
+    33% { content: '.'; }
+    66% { content: '..'; }
+    100% { content: '...'; }
+  }
+  .waiting-dots::after { content: ''; animation: dots 1.5s infinite; }
+
 </style>
 </head>
 <body>
@@ -1164,23 +1178,38 @@ function renderPartIntro() {
   const part = PARTS[state.currentPart];
   const qIndex = state.scores_by_part.slice(0, state.currentPart).reduce((a, p) => a + p.total, 0) + state.currentQ;
 
-  aiSay(`
-    <div class="phase-badge">${part.name}</div>
-    <h3>${part.icon} ${part.title}</h3>
-    <p>${part.description}</p>
-    <div class="test-card" style="margin-top:12px">
-      <div class="instruction">${part.instruction}</div>
-      ${part.questions[state.currentQ].audio ? `
-        <div class="audio-sim" id="audioSim" onclick="playAudio(this)">
-          <div class="play-btn">▶</div>
-          <div class="audio-sim-text">
-            <strong>🎧 点击播放通话录音</strong>
-            <span class="audio-status" style="font-size:11px;color:var(--text-muted)">点击按钮播放</span>
-          </div>
-        </div>` : ''}
-    </div>
-  `, 200);
-  setTimeout(() => renderQuestion(), 1200);
+  // Show loading indicator immediately so user knows something is happening
+  const loadingCard = document.createElement('div');
+  loadingCard.className = 'test-card';
+  loadingCard.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted)"><div style="font-size:20px;margin-bottom:8px">⏳</div><div>题目加载中<span class="waiting-dots"></span></div></div>';
+  chat.appendChild(loadingCard);
+  scrollBottom();
+
+  setTimeout(() => {
+    // Remove loading
+    if (loadingCard.parentNode) loadingCard.parentNode.removeChild(loadingCard);
+    
+    // Show intro
+    aiSay(`
+      <div class="phase-badge">${part.name}</div>
+      <h3>${part.icon} ${part.title}</h3>
+      <p>${part.description}</p>
+      <div class="test-card" style="margin-top:12px">
+        <div class="instruction">${part.instruction}</div>
+        ${part.questions[state.currentQ].audio ? `
+          <div class="audio-sim" id="audioSim" onclick="playAudio(this)" style="margin-top:12px">
+            <div class="play-btn">▶</div>
+            <div class="audio-sim-text">
+              <strong>🎧 点击播放通话录音</strong>
+              <span class="audio-status" style="font-size:11px;color:var(--text-muted)">点击按钮播放</span>
+            </div>
+          </div>` : ''}
+      </div>
+    `, 100);
+    
+    // Show question after short delay
+    setTimeout(() => renderQuestion(), 1200);
+  }, 100);
 }
 
 function renderQuestion() {
@@ -1216,9 +1245,10 @@ function renderQuestion() {
     }
     html += `
       <div class="text-input-wrap">
-        <textarea id="userText" placeholder="请在这里输入你的回答..." rows="3"></textarea>
+        <textarea id="userText" placeholder="请在这里输入回答（按 Enter 快速提交）..." rows="3" oninput="onTextInput(this)" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();submitText();}"></textarea>
       </div>
-      <button class="submit-btn" onclick="submitText()">提交回答</button>`;
+      <button class="submit-btn" id="textSubmitBtn" onclick="submitText()" disabled style="opacity:0.5;cursor:not-allowed">提交回答</button>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px" id="textHint">✏️ 请先听音频，再输入回答</div>`;
   } else {
     html += `
       <div class="options-list">
@@ -1254,6 +1284,27 @@ function selectTopic(idx, text) {
   document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
   document.getElementById('topic' + idx).classList.add('selected');
   state.currentTranscript = text;
+  // Enable submit button for topics-based questions
+  const btn = document.getElementById('textSubmitBtn');
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+}
+
+function onTextInput(el) {
+  const btn = document.getElementById('textSubmitBtn');
+  if (!btn) return;
+  if (el.value.trim().length > 0) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    const hint = document.getElementById('textHint');
+    if (hint) hint.textContent = '✅ 可以提交了';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+    const hint = document.getElementById('textHint');
+    if (hint) hint.textContent = '✏️ 请先输入回答';
+  }
 }
 
 let currentAudioText = '';
@@ -1332,7 +1383,15 @@ function selectOption(idx) {
 }
 
 function submitChoice() {
-  if (state.submitted || state.selectedOption === null) return;
+  if (state.submitted) return;
+  if (state.selectedOption === null) {
+    const btn = document.getElementById('submitBtn');
+    if (btn) {
+      btn.style.animation = 'shake 0.4s';
+      setTimeout(() => { if(btn) btn.style.animation = ''; }, 400);
+    }
+    return;
+  }
   state.submitted = true;
 
   const part = PARTS[state.currentPart];
@@ -1380,6 +1439,12 @@ function submitText() {
 
   state.submitted = true;
   state.answers['text_' + state.currentPart + '_' + state.currentQ] = text;
+  
+  // Update UI
+  const hint = document.getElementById('textHint');
+  if (hint) hint.style.display = 'none';
+  const btn = document.getElementById('textSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '已提交 ✓'; }
 
   // Simple keyword check for scoring
   let isCorrect = false;
