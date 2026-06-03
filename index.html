@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1677,14 +1678,21 @@ function handleUserInput(text) {
 }
 
 // Expose to global for onclick handlers
-window.selectOption = selectOption;
-window.submitChoice = submitChoice;
-window.submitText = submitText;
-window.nextQuestion = nextQuestion;
-window.playAudio = playAudio;
-window.selectTopic = selectTopic;
-window.restartTest = restartTest;
-window.handleUserInput = handleUserInput;
+// All functions defined above. Expose to global scope and init after DOM ready.
+document.addEventListener('DOMContentLoaded', function() {
+  // Pre-load voices for mobile
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+  }
+  window.selectOption = selectOption;
+  window.submitChoice = submitChoice;
+  window.submitText = submitText;
+  window.nextQuestion = nextQuestion;
+  window.playAudio = playAudio;
+  window.selectTopic = selectTopic;
+  window.restartTest = restartTest;
+  window.handleUserInput = handleUserInput;
 
 // Input bar
 const inputBar = document.createElement('div');
@@ -1724,6 +1732,5 @@ if ('speechSynthesis' in window) {
 }
 
 renderIntro();
+  }); // end DOMContentLoaded
 </script>
-</body>
-</html>
