@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICAO 英语五级模拟测试</title>
+<style>
+  :root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --bg-user: #1d4ed8;
+    --bg-ai: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #3b82f6;
+    --accent-light: #60a5fa;
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --border: #334155;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --radius: 16px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  header {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .header-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .header-info h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .header-info p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .header-badge {
+    margin-left: auto;
+    background: rgba(59,130,246,0.15);
+    border: 1px solid rgba(59,130,246,0.3);
+    color: var(--accent-light);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* Chat container */
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    padding-bottom: 130px; /* 给底部固定输入框留空间 */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    animation: fadeInUp 0.3s ease;
+    max-width: 820px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .message.ai { align-items: flex-start; }
+  .message.user { flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .ai .msg-avatar {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  }
+
+  .user .msg-avatar {
+    background: var(--bg-tertiary);
+    font-size: 14px;
+  }
+
+  .msg-bubble-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: calc(100% - 52px);
+  }
+
+  .user .msg-bubble-wrap { align-items: flex-end; }
+
+  .msg-role {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 4px;
+  }
+
+  .msg-bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  .ai .msg-bubble {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+  }
+
+  .user .msg-bubble {
+    background: var(--bg-user);
+    border-top-right-radius: 4px;
+    color: white;
+  }
+
+  .msg-bubble p { margin-bottom: 8px; }
+  .msg-bubble p:last-child { margin-bottom: 0; }
+
+  .msg-bubble strong { color: var(--accent-light); }
+  .user .msg-bubble strong { color: #93c5fd; }
+
+  /* Typing indicator */
+  .typing-wrap {
+    display: flex;
+    gap: 5px;
+    padding: 4px 0;
+  }
+
+  .typing-dot {
+    width: 7px; height: 7px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: typingBounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Card styles */
+  .info-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-top: 8px;
+  }
+
+  .info-card h3 {
+    font-size: 13px;
+    color: var(--accent-light);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .info-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .info-card li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+
+  .info-card li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+
+  /* Test card */
+  .test-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 8px;
+    width: 100%;
+  }
+
+  .test-card .part-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .test-card h3 {
+    font-size: 16px;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+
+  .test-card .instruction {
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: rgba(59,130,246,0.08);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  /* Audio player simulation */
+  .audio-sim {
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05));
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .audio-sim:hover { background: rgba(59,130,246,0.2); }
+
+  .audio-sim .play-btn {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+
+  .audio-sim.playing .play-btn { animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .audio-sim-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .audio-sim-text strong { color: var(--accent-light); display: block; margin-bottom: 2px; }
+
+  /* Options */
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .option-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.1);
+  }
+
+  .option-btn.selected {
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.2);
+  }
+
+  .option-btn.correct {
+    border-color: var(--success);
+    background: rgba(34,197,94,0.15);
+  }
+
+  .option-btn.wrong {
+    border-color: var(--error);
+    background: rgba(239,68,68,0.15);
+  }
+
+  .option-btn .opt-letter {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .option-btn.selected .opt-letter { background: var(--accent); color: white; }
+  .option-btn.correct .opt-letter { background: var(--success); color: white; }
+  .option-btn.wrong .opt-letter { background: var(--error); color: white; }
+
+  /* Text input */
+  .text-input-wrap {
+    margin-top: 12px;
+  }
+
+  .text-input-wrap label {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .text-input-wrap textarea {
+    width: 100%;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: none;
+    min-height: 80px;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  .text-input-wrap textarea:focus { border-color: var(--accent); }
+  .text-input-wrap textarea::placeholder { color: var(--text-muted); }
+
+  /* Submit button */
+  .submit-btn {
+    margin-top: 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    font-family: inherit;
+  }
+
+  .submit-btn:hover:not(:disabled) { background: var(--accent-light); }
+  .submit-btn:active:not(:disabled) { transform: scale(0.97); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Feedback box */
+  .feedback-box {
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .feedback-box.correct {
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+  }
+
+  .feedback-box.wrong {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+
+  .feedback-box.neutral {
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+
+  .feedback-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .feedback-box.correct .feedback-title { color: var(--success); }
+  .feedback-box.wrong .feedback-title { color: var(--error); }
+  .feedback-box.neutral .feedback-title { color: var(--accent-light); }
+
+  /* Progress bar */
+  .progress-bar-wrap {
+    padding: 12px 24px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-light));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* Report card */
+  .report-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-top: 8px;
+  }
+
+  .report-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .report-header .score-big {
+    font-size: 48px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-light), var(--success));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+
+  .report-header p { font-size: 14px; color: var(--text-secondary); margin-top: 6px; }
+
+  .report-dimensions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .dim-item {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dim-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .dim-icon.excellent { background: rgba(34,197,94,0.2); }
+  .dim-icon.good { background: rgba(59,130,246,0.2); }
+  .dim-icon.weak { background: rgba(239,68,68,0.2); }
+
+  .dim-text { flex: 1; min-width: 0; }
+  .dim-name { font-size: 12px; color: var(--text-secondary); }
+  .dim-score { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .dim-score.excellent { color: var(--success); }
+  .dim-score.good { color: var(--accent-light); }
+  .dim-score.weak { color: var(--error); }
+
+  .report-recommendations {
+    background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .report-recommendations h4 {
+    font-size: 13px;
+    color: var(--accent-light);
+    margin-bottom: 10px;
+  }
+
+  .report-recommendations ol {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .report-recommendations li { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  .restart-btn {
+    margin-top: 16px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent-light);
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .restart-btn:hover { background: rgba(59,130,246,0.1); }
+
+  /* Dimension explain */
+  .dim-explain {
+    margin-top: 16px;
+    padding: 14px;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .dim-explain strong { color: var(--warning); }
+
+  /* Next btn */
+  .next-btn {
+    margin-top: 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 10px 28px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: inherit;
+  }
+
+  .next-btn:hover { background: var(--accent-light); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 3px; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    header { padding: 12px 16px; }
+    #chat { padding: 16px; }
+    .report-dimensions { grid-template-columns: 1fr; }
+    .msg-bubble { font-size: 13px; }
+    .header-badge { display: none; }
+  }
+
+  /* Level band display */
+  .level-band {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(59,130,246,0.1));
+    border: 1px solid rgba(34,197,94,0.3);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--success);
+    margin: 8px 0;
+  }
+
+  /* Phase indicator */
+  .phase-badge {
+    display: inline-block;
+    background: rgba(59,130,246,0.15);
+    color: var(--accent-light);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+
+  .code-block {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    color: #93c5fd;
+    margin: 8px 0;
+    border-left: 3px solid var(--accent);
+  }
+
+  .highlight-text { color: #fbbf24; font-weight: 600; }
+
+  .warning-box {
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 10px 0;
+    line-height: 1.6;
+  }
+
+  .warning-box strong { color: var(--warning); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">✈️</div>
+  <div class="header-info">
+    <h1>ICAO 英语五级模拟测试</h1>
+    <p>基于 ICAO Doc 9835 &amp; ICAO 900 核心句型</p>
+  </div>
+  <div class="header-badge">Level 5 Pilot</div>
+</header>
+
+<div id="chat"></div>
+
+<div class="progress-bar-wrap" id="progressWrap" style="display:none;">
+  <div class="progress-info">
+    <span id="progressLabel">测试进度</span>
+    <span id="progressCount">0 / 12</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const TOTAL_QUESTIONS = 12;
+let state = {
+  phase: 'intro',        // intro | structure | test | report
+  currentPart: 0,        // 0-5 (six parts)
+  currentQ: 0,           // question index within part
+  answers: {},          // { qIndex: answer }
+  scores: {             // scores per part
+    pronunciation: [],
+    structure: [],
+    vocabulary: [],
+    fluency: [],
+    comprehension: [],
+    interaction: []
+  },
+  scores_by_part: [],
+  inputMode: null,      // 'choice' | 'text' | 'choice-or-text'
+  selectedOption: null,
+  submitted: false,
+  currentTranscript: '',
+  audioPlaying: false
+};
+
+// ============================================================
+// CONTENT DATABASE
+// ============================================================
+const PARTS = [
+  {
+    name: 'Part 1',
+    title: '听力理解 Listening Comprehension',
+    description: '你将听到一段飞行员与管制员之间的通话。从三个选项中选出正确答案。',
+    instruction: '请仔细听题，点击播放按钮后选择正确答案。',
+    icon: '🎧',
+    questions: [
+      {
+        audio: 'Nanjing Tower, CES 302, descending FL100, runway 27 approach.',
+        question: '飞行员正在做什么？',
+        options: ['正在离场', '正在进近着陆', '正在巡航'],
+        correct: 1,
+        dimension: 'comprehension',
+        feedback: {
+          correct: '正确！这是一段进近通信，CES302 正在使用27号跑道进近。关键词：descending FL100, runway 27 approach。',
+          wrong: '这是一段进近通信。CES302 正在下降到FL100（10000英尺），使用27号跑道进近。关键词：descending FL100, runway 27 approach。'
+        }
+      },
+      {
+        audio: 'Speedbird 178, reduce to minimum clean, expect vectoring for ILS runway 27.',
+        question: '管制员要求 Speedbird 178 做什么？',
+        options: ['增加速度', '减小到最小速度，配置光洁形态', '保持当前速度'],
+        correct: 1,
+        dimension: 'comprehension',
+        feedback: {
+          correct: '正确！reduce to minimum clean 表示减小到最小速度，收取起落架和襟翼（光洁形态）。这是五级听力中的核心词汇。',
+          wrong: 'reduce to minimum clean 是 ICAO 标准用语，意为"减小到最小速度，配置光洁形态"。这是飞行员进近中调整速度的常见指令。'
+        }
+      }
+    ]
+  },
+  {
+    name: 'Part 2',
+    title: '口语复述 Oral Production',
+    description: '你将听到一段通话。请用英语复述听到的内容，或用自己的话简短描述。',
+    instruction: '请仔细听题，然后在下方的文本框中输入你的复述（可用自己的措辞）。',
+    icon: '🎙️',
+    questions: [
+      {
+        audio: 'Air China 888, descend to FL100, maintain speed 250 knots or less until intercepting the ILS.',
+        question: '请复述或描述这段通话的大意：',
+        instruction: 'CA888，描述管制员给出了什么指令？你也可以用不同措辞表达相同意思。',
+        type: 'text',
+        sampleAnswer: 'Air China 888 was instructed to descend to flight level 100 and maintain speed 250 knots or less until intercepting the ILS approach.',
+        dimension: 'fluency',
+        keywords: ['descend', 'FL100', 'speed', '250 knots', 'ILS'],
+        feedback: {
+          correct: '很好！你的复述准确捕捉了核心信息。标准复述：降高度至FL100，保持速度250节以下直到截获ILS。',
+          wrong: '提示：这段通话包含以下关键信息——下降至FL100，保持250节或以下，直到截获ILS。可关注：descend / maintain / intercepting 这些核心词汇。'
+        }
+      },
+      {
+        audio: 'Heavy aircraft, request delay vectors, fuel on board four hours, heading zero nine zero.',
+        question: '请复述或描述这段通话：',
+        instruction: '这是一位重型机飞行员发出的请求，请描述他说了什么。',
+        type: 'text',
+        sampleAnswer: 'A heavy aircraft is requesting delay vectors due to fuel concerns, stating four hours of fuel remaining, and suggesting a heading of 090.',
+        dimension: 'fluency',
+        keywords: ['heavy', 'delay vectors', 'fuel', 'four hours', 'heading 090'],
+        feedback: {
+          correct: '很好！你准确理解了飞行员的需求：请求等待航线，因为燃油只剩4小时，建议090航向。这是紧急情况下的标准表达。',
+          wrong: '提示：这位重型机飞行员正在请求等待航线，因为燃油仅剩4小时，建议的航向是090。关键词：delay vectors / fuel on board / heading zero nine zero。'
+        }
+      }
+    ]
+  },
+  {
+    name: 'Part 3',
+    title: '释义题 Paraphrasing（Level 5 核心）',
+    description: '这是 ICAO 五级考试的核心区分项！给定原句，请用不同方式表达相同意思。',
+    instruction: '五级与四级的最大区别在于：五级考生必须展示用不同方式表达相同意义的能力。',
+    icon: '🔄',
+    questions: [
+      {
+        original: '"Cleared to descend to altitude 3000 feet."',
+        question: '请用另一种方式表达这句话：',
+        instruction: '将"Cleared to descend to altitude 3000 feet"改写为意义相同的其他表达：',
+        type: 'text',
+        sampleAnswer: 'You are authorized to descend to and maintain three thousand feet.',
+        dimension: 'vocabulary',
+        keywords: ['descend', 'altitude', '3000', 'cleared', 'authorized', 'maintain'],
+        feedback: {
+          correct: '正确！你的释义展示了五级水平的语言灵活性。标准五级表达：You are authorized to descend to and maintain 3000 feet。',
+          wrong: '提示：五级释义的关键是同义替换——"cleared to descend" = "you are authorized to descend" 或 "you may descend"。目标：展示语言多样性。'
+        }
+      },
+      {
+        original: '"Contact Tower on 118.1."',
+        question: '请用另一种方式表达这句话：',
+        instruction: '将"Contact Tower on 118.1"改写为意义相同的其他表达：',
+        type: 'text',
+        sampleAnswer: 'Change frequency to Tower, 118.1 megahertz.',
+        dimension: 'vocabulary',
+        keywords: ['contact', 'tower', '118.1', 'change frequency', 'megahertz'],
+        feedback: {
+          correct: '正确！五级表达：Change frequency to Tower, 118.1 megahertz. 注意：五级用 MHz 替代口语化的 on，也可用 "reach" 替代 "contact"。',
+          wrong: '提示：五级释义参考——"Change frequency to Tower, 118.1 megahertz." 或 "Reach the tower at 118.1." 注意 MHz 是更正式的表达。'
+        }
+      },
+      {
+        original: '"Say again."',
+        question: '请用另一种方式表达这句话：',
+        instruction: '将"Say again"（请重复）用更正式或不同的方式表达：',
+        type: 'text',
+        sampleAnswer: 'Repeat your last transmission, please.',
+        dimension: 'interaction',
+        keywords: ['again', 'repeat', 'say again', 'transmission'],
+        feedback: {
+          correct: '正确！五级表达非常多样：Repeat / I did not copy / Please say again / Say your last again. 五级水平体现在用词丰富度和句式多样性。',
+          wrong: '提示：五级中"Say again"有多种释义方式——"Repeat, please" / "I did not copy" / "Please say your last again" / "Would you repeat?" 关键：避免重复考官原句。'
+        }
+      }
+    ]
+  },
+  {
+    name: 'Part 4',
+    title: '情境对话 Scenario Response',
+    description: '给定一个真实飞行场景，选择或输入你认为最恰当的回应。',
+    instruction: '请选择最符合 ICAO 标准通话规范的回应。',
+    icon: '🎬',
+    questions: [
+      {
+        scenario: '你正在进近，塔台通知：<br><span class="code-block">"Speedbird 175, wind 270 at 15, runway 27, cleared to land."</span>',
+        question: 'Speedbird 175 应该怎么回应？',
+        options: [
+          '"Wilco."',
+          '"Cleared to land, Speedbird 175."',
+          '"Roger."'
+        ],
+        correct: 1,
+        dimension: 'structure',
+        feedback: {
+          correct: '正确！ICAO 规范要求：收到许可时必须复诵关键信息。标准回应：Callsign + cleared to land。五级要求完整复诵许可内容。',
+          wrong: '收到着陆许可时，必须复诵许可的核心内容。标准五级回应：<span class="code-block">"Cleared to land, Speedbird 175."</span> 而"Wilco"和"Roger"均未满足复诵许可的要求。'
+        }
+      },
+      {
+        scenario: '管制员发出：<br><span class="code-block">"Air France 007, descend to FL80, cross Delta beacon at or above 4000."</span>',
+        question: 'Air France 007 的正确回应是？',
+        options: [
+          '"Descending FL80."',
+          '"Descend to FL80, cross Delta at or above 4000, Air France 007."',
+          '"Roger."'
+        ],
+        correct: 1,
+        dimension: 'structure',
+        feedback: {
+          correct: '正确！ICAO 要求的复诵格式：复诵高度限制指令（FL80 + crossing约束）+ 呼号。五级强调完整复诵，不遗漏高度限制。',
+          wrong: '标准复诵格式：先重复高度指令，再重复限制条件，最后呼号。<span class="code-block">"Descend to FL80, cross Delta at or above 4000, Air France 007."</span>'
+        }
+      }
+    ]
+  },
+  {
+    name: 'Part 5',
+    title: '互动问答 Interactive Communication',
+    description: '与管制员模拟通话。选择你认为最恰当的回应选项。',
+    instruction: '这是 ICAO 五级最贴近真实通话的部分，考验即时反应和语言灵活性。',
+    icon: '📡',
+    questions: [
+      {
+        scenario: '管制员问：<br><span class="code-block">"CSA 101, what is your destination?"</span>',
+        question: 'CSA 101 应该如何回答？',
+        options: [
+          '"Destination Prague."',
+          '"Prague Airport, CSA 101."',
+          '"Going to Prague."'
+        ],
+        correct: 1,
+        dimension: 'interaction',
+        feedback: {
+          correct: '正确！五级规范：目的地机场名称 + 航班号。五级要求完整、结构化的回答，不能省略机场全名。',
+          wrong: '五级规范的回答格式：目的地机场名 + 航班号。<span class="code-block">"Prague Airport, CSA 101."</span> 而"Going to Prague"不够正式，缺少机场名和航班号。'
+        }
+      },
+      {
+        scenario: '管制员问：<br><span class="code-block">"Speedbird 93, confirm you have information Charlie."</span>',
+        question: 'Speedbird 93 应该如何回应？',
+        options: [
+          '"Affirm, we have Charlie."',
+          '"Confirm Charlie, Speedbird 93."',
+          '"Yes."'
+        ],
+        correct: 0,
+        dimension: 'interaction',
+        feedback: {
+          correct: '正确！确认信息时用"Affirm"（英式）/ "Correct"；否定时用"Negative"。"Affirm, we have Charlie"是五级标准表达。',
+          wrong: '"Confirm"在 ICAO 中用于要求对方确认，而"Affirm"用于己方确认。<span class="code-block">"Affirm, we have Charlie."</span> 是五级标准确认格式。'
+        }
+      }
+    ]
+  },
+  {
+    name: 'Part 6',
+    title: '自由表达 Extended Production',
+    description: '选择一个话题，用1-2分钟口头表达你的观点。输入文字即可。',
+    instruction: '五级自由表达评估：内容深度、词汇多样性、语法准确性、流利度。',
+    icon: '💬',
+    questions: [
+      {
+        topics: [
+          'Describe a challenging communication situation you experienced as a pilot and how you resolved it.',
+          'What do you think are the most important factors for effective pilot-controller communication?'
+        ],
+        question: '请选择话题并作答：',
+        instruction: '选择一个话题，用英语写一段2-3句话的口头表达。注意展示词汇多样性和语法准确性。',
+        type: 'text',
+        dimension: 'fluency',
+        feedback: {
+          correct: '你的回答展示了良好的表达能力！继续练习以提高词汇多样性和减少语法错误。',
+          wrong: '提示：五级自由表达关注——①词汇多样性（避免重复）②语法准确性③内容连贯性。建议使用 ICAO 900 中的场景词汇。'
+        }
+      }
+    ]
+  }
+];
+
+// ============================================================
+// DOM helpers
+// ============================================================
+const chat = document.getElementById('chat');
+const progressWrap = document.getElementById('progressWrap');
+
+function scrollBottom() {
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function updateProgress(current, total) {
+  const pct = (current / total) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressCount').textContent = current + ' / ' + total;
+}
+
+function makeMsg(cls, avatar, role, html, extraClass = '') {
+  const div = document.createElement('div');
+  div.className = 'message ' + cls;
+  div.innerHTML = `
+    <div class="msg-avatar">${avatar}</div>
+    <div class="msg-bubble-wrap">
+      <div class="msg-role">${role}</div>
+      <div class="msg-bubble ${extraClass}">${html}</div>
+    </div>`;
+  return div;
+}
+
+function addMsg(cls, avatar, role, html, extraClass = '') {
+  const m = makeMsg(cls, avatar, role, html, extraClass);
+  chat.appendChild(m);
+  scrollBottom();
+  return m;
+}
+
+function addTyping() {
+  const div = document.createElement('div');
+  div.className = 'message ai';
+  div.id = 'typingEl';
+  div.innerHTML = `
+    <div class="msg-avatar">✈️</div>
+    <div class="msg-bubble-wrap">
+      <div class="msg-role">AI 考官</div>
+      <div class="msg-bubble">
+        <div class="typing-wrap">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>`;
+  chat.appendChild(div);
+  scrollBottom();
+  return div;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typingEl');
+  if (el) el.remove();
+}
+
+// Typewriter effect
+function typewrite(element, text, speed = 18) {
+  return new Promise(resolve => {
+    let i = 0;
+    element.innerHTML = '';
+    function step() {
+      if (i < text.length) {
+        // Handle HTML tags
+        if (text[i] === '<') {
+          let tag = '';
+          while (i < text.length && text[i] !== '>') tag += text[i++];
+          tag += '>';
+          i++;
+          element.innerHTML += tag;
+        } else {
+          element.innerHTML += text[i++];
+        }
+        scrollBottom();
+        setTimeout(step, speed);
+      } else {
+        resolve();
+      }
+    }
+    step();
+  });
+}
+
+// ============================================================
+// AUDIO SIMULATION (Web Speech API)
+// ============================================================
+function speakText(text, callback) {
+  if (!('speechSynthesis' in window)) {
+    callback && callback();
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = 'en-US';
+  utt.rate = 0.85;
+  utt.pitch = 1;
+  // Try to find a good voice
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Daniel') || v.name.includes('Google US')));
+  if (preferred) utt.voice = preferred;
+  utt.onend = callback;
+  utt.onerror = callback;
+  window.speechSynthesis.speak(utt);
+}
+
+// ============================================================
+// ASYNC MESSAGE WITH TYPING
+// ============================================================
+async function aiSay(html, delay = 400) {
+  await sleep(delay);
+  const typingEl = addTyping();
+  await sleep(500);
+  removeTyping();
+  const m = addMsg('ai', '✈️', 'AI 考官', '');
+  const bubble = m.querySelector('.msg-bubble');
+  await typewrite(bubble, html);
+  return m;
+}
+
+async function aiSayImmediate(html) {
+  const m = addMsg('ai', '✈️', 'AI 考官', '');
+  const bubble = m.querySelector('.msg-bubble');
+  bubble.innerHTML = html;
+  scrollBottom();
+  return m;
+}
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+function renderIntro() {
+  state.phase = 'intro';
+  progressWrap.style.display = 'none';
+  addMsg('ai', '✈️', 'AI 考官', `
+    <p>✈️ <strong>欢迎来到 ICAO 英语五级模拟测试</strong></p>
+    <p>你好！我是你的 ICAO 英语五级模拟考官。本次测试约需 <strong>15-20 分钟</strong>，包含六大维度：</p>
+    <div class="info-card">
+      <h3>📋 ICAO 英语五级评分维度（ICAO Doc 9835）</h3>
+      <ul>
+        <li><strong>发音 Pronunciation</strong> — 清晰度、音节重音、英美口音可接受性</li>
+        <li><strong>结构 Structure</strong> — 语法正确性、句子结构符合规范</li>
+        <li><strong>词汇 Vocabulary</strong> — 航空术语、词汇多样性（同义词替换能力）</li>
+        <li><strong>流利度 Fluency</strong> — 语速自然、无过度停顿犹豫</li>
+        <li><strong>理解力 Comprehension</strong> — 对标准及非标准用语的即时理解</li>
+        <li><strong>互动能力 Interaction</strong> — 回应恰当、对话轮换自然</li>
+      </ul>
+    </div>
+    <p style="margin-top:12px">🕐 测试时长约 15-20 分钟，共 6 个部分，12 道题。</p>
+    <div class="warning-box">
+      <strong>💡 Level 4 vs Level 5 核心区别：</strong><br>
+      Level 4 考生只需"能用标准 ICAO 措辞正确回应"；<br>
+      Level 5 考生必须展示<strong>释义能力（Paraphrasing）</strong>——即用不同方式表达相同意思，这是五级最核心的区分项！
+    </div>
+    <p>准备好了吗？输入 <strong>"开始测试"</strong> 或 <strong>"考5级"</strong> 即可开始。</p>
+  `);
+}
+
+function renderStructure() {
+  state.phase = 'structure';
+  aiSay(`
+    <div class="phase-badge">测试结构说明</div>
+    <p>好的，让我们开始！首先介绍本次模拟测试的完整结构：</p>
+    <div class="info-card">
+      <h3>📝 测试结构总览</h3>
+      <ul>
+        <li><strong>Part 1</strong> 🎧 听力理解 × 2题 — 听标准 ICAO 通话，选正确答案</li>
+        <li><strong>Part 2</strong> 🎙️ 口语复述 × 2题 — 听通话，口头/书面复述</li>
+        <li><strong>Part 3</strong> 🔄 释义题 × 3题 — <span class="highlight-text">五级核心！</span>改写句子</li>
+        <li><strong>Part 4</strong> 🎬 情境对话 × 2题 — 面对场景，选/写正确回应</li>
+        <li><strong>Part 5</strong> 📡 互动问答 × 2题 — 模拟实时 ATC 对话</li>
+        <li><strong>Part 6</strong> 💬 自由表达 × 1题 — 主题口头表达</li>
+      </ul>
+    </div>
+    <p style="margin-top:12px">✅ 每个部分开始前我都会给出简短说明。<br>
+    全部完成后，我将为你生成一份 <strong>薄弱维度分析报告</strong>。</p>
+    <p style="margin-top:8px">准备好了吗？输入 <strong>"开始"</strong> 正式开始 Part 1！</p>
+  `, 300);
+}
+
+function startTest() {
+  state.phase = 'test';
+  state.currentPart = 0;
+  state.currentQ = 0;
+  state.answers = {};
+  state.scores_by_part = PARTS.map(p => ({ correct: 0, total: p.questions.length }));
+  progressWrap.style.display = 'block';
+  updateProgress(0, TOTAL_QUESTIONS);
+  renderPartIntro();
+}
+
+function renderPartIntro() {
+  const part = PARTS[state.currentPart];
+  const qIndex = state.scores_by_part.slice(0, state.currentPart).reduce((a, p) => a + p.total, 0) + state.currentQ;
+
+  aiSay(`
+    <div class="phase-badge">${part.name}</div>
+    <h3>${part.icon} ${part.title}</h3>
+    <p>${part.description}</p>
+    <div class="test-card" style="margin-top:12px">
+      <div class="instruction">${part.instruction}</div>
+      ${part.questions[state.currentQ].audio ? `
+        <div class="audio-sim" id="audioSim" onclick="playAudio(this)">
+          <div class="play-btn">▶</div>
+          <div class="audio-sim-text">
+            <strong>点击播放通话录音</strong>
+            <span style="font-size:11px;color:var(--text-muted)">使用语音合成模拟 ATC 通话</span>
+          </div>
+        </div>` : ''}
+    </div>
+  `, 200);
+  setTimeout(() => renderQuestion(), 1200);
+}
+
+function renderQuestion() {
+  const part = PARTS[state.currentPart];
+  const q = part.questions[state.currentQ];
+  const isText = q.type === 'text';
+  const isPart6Choice = part.name === 'Part 6';
+
+  state.inputMode = isText ? 'text' : 'choice';
+  state.selectedOption = null;
+  state.submitted = false;
+
+  let html = `<p><strong>${q.question}</strong></p>`;
+
+  if (q.original) {
+    html += `<div class="code-block">${q.original}</div>`;
+  }
+  if (q.scenario) {
+    html += q.scenario;
+  }
+  if (q.instruction) {
+    html += `<div class="instruction">${q.instruction}</div>`;
+  }
+
+  if (isText) {
+    if (q.topics) {
+      html += q.topics.map((t, i) =>
+        `<div class="option-btn" onclick="selectTopic(${i}, \`${t.replace(/`/g, '\\`').replace(/'/g, "\\'")}\`)" id="topic${i}" style="margin-top:8px;line-height:1.5">
+          <span class="opt-letter">${String.fromCharCode(65+i)}</span>
+          <span>${t}</span>
+        </div>`
+      ).join('');
+    }
+    html += `
+      <div class="text-input-wrap">
+        <textarea id="userText" placeholder="请在这里输入你的回答..." rows="3"></textarea>
+      </div>
+      <button class="submit-btn" onclick="submitText()">提交回答</button>`;
+  } else {
+    html += `
+      <div class="options-list">
+        ${q.options.map((opt, i) => `
+          <button class="option-btn" id="opt${i}" onclick="selectOption(${i})">
+            <span class="opt-letter">${String.fromCharCode(65+i)}</span>
+            <span>${opt}</span>
+          </button>`).join('')}
+      </div>
+      <button class="submit-btn" id="submitBtn" onclick="submitChoice()" disabled>提交答案</button>`;
+  }
+
+  const qIndex = state.scores_by_part.slice(0, state.currentPart).reduce((a, p) => a + p.total, 0) + state.currentQ;
+  const card = document.createElement('div');
+  card.className = 'test-card';
+  card.id = 'qCard';
+  card.innerHTML = html;
+  chat.appendChild(card);
+  scrollBottom();
+
+  if (isPart6Choice && q.topics) {
+    // Wait for topic selection
+  } else if (isText && !q.topics) {
+    // focus textarea
+    setTimeout(() => {
+      const ta = document.getElementById('userText');
+      if (ta) ta.focus();
+    }, 100);
+  }
+}
+
+function selectTopic(idx, text) {
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('topic' + idx).classList.add('selected');
+  state.currentTranscript = text;
+}
+
+let currentAudioText = '';
+function playAudio(el) {
+  const part = PARTS[state.currentPart];
+  const q = part.questions[state.currentQ];
+  currentAudioText = q.audio;
+
+  if (state.audioPlaying) {
+    window.speechSynthesis.cancel();
+    state.audioPlaying = false;
+    el.classList.remove('playing');
+    el.querySelector('.play-btn').textContent = '▶';
+    el.querySelector('.play-btn').style.animation = '';
+    return;
+  }
+
+  el.classList.add('playing');
+  el.querySelector('.play-btn').textContent = '⏸';
+  state.audioPlaying = true;
+
+  speakText(q.audio, () => {
+    state.audioPlaying = false;
+    el.classList.remove('playing');
+    el.querySelector('.play-btn').textContent = '▶';
+  });
+}
+
+function selectOption(idx) {
+  if (state.submitted) return;
+  state.selectedOption = idx;
+  document.querySelectorAll('.option-btn').forEach((b, i) => {
+    b.classList.toggle('selected', i === idx);
+  });
+  document.getElementById('submitBtn').disabled = false;
+}
+
+function submitChoice() {
+  if (state.submitted || state.selectedOption === null) return;
+  state.submitted = true;
+
+  const part = PARTS[state.currentPart];
+  const q = part.questions[state.currentQ];
+  const isCorrect = state.selectedOption === q.correct;
+  const qIndex = state.scores_by_part.slice(0, state.currentPart).reduce((a, p) => a + p.total, 0) + state.currentQ;
+
+  state.answers[qIndex] = state.selectedOption;
+  state.scores_by_part[state.currentPart].correct += isCorrect ? 1 : 0;
+
+  // Style options
+  document.querySelectorAll('.option-btn').forEach((b, i) => {
+    b.style.cursor = 'default';
+    if (i === q.correct) b.classList.add('correct');
+    else if (i === state.selectedOption) b.classList.add('wrong');
+  });
+
+  // Add feedback
+  const fb = document.createElement('div');
+  const fbClass = isCorrect ? 'correct' : 'wrong';
+  fb.className = `feedback-box ${fbClass}`;
+  fb.innerHTML = `
+    <div class="feedback-title">${isCorrect ? '✅ 正确！' : '❌ 不正确'}</div>
+    <div>${isCorrect ? q.feedback.correct : q.feedback.wrong}</div>
+  `;
+  document.getElementById('qCard').appendChild(fb);
+
+  // Next button
+  const btn = document.createElement('button');
+  btn.className = 'next-btn';
+  btn.textContent = getNextLabel();
+  btn.onclick = nextQuestion;
+  document.getElementById('qCard').appendChild(btn);
+  scrollBottom();
+}
+
+function submitText() {
+  if (state.submitted) return;
+  const part = PARTS[state.currentPart];
+  const q = part.questions[state.currentQ];
+  const input = document.getElementById('userText');
+  const text = (input.value || '').trim();
+
+  state.submitted = true;
+  state.answers['text_' + state.currentPart + '_' + state.currentQ] = text;
+
+  // Simple keyword check for scoring
+  let isCorrect = false;
+  if (q.keywords) {
+    const found = q.keywords.filter(k => text.toLowerCase().includes(k.toLowerCase()));
+    isCorrect = found.length >= Math.ceil(q.keywords.length * 0.5);
+  } else {
+    isCorrect = text.length > 30;
+  }
+
+  const qIndex = state.scores_by_part.slice(0, state.currentPart).reduce((a, p) => a + p.total, 0) + state.currentQ;
+  state.scores_by_part[state.currentPart].correct += isCorrect ? 1 : 0;
+
+  const fb = document.createElement('div');
+  const fbClass = isCorrect ? 'correct' : 'neutral';
+  fb.className = `feedback-box ${fbClass}`;
+  fb.innerHTML = `
+    <div class="feedback-title">${isCorrect ? '✅ 回答良好！' : '📝 已收到回答'}</div>
+    <div>${q.feedback.wrong}</div>
+    ${q.sampleAnswer ? `<div style="margin-top:8px;font-size:12px;color:var(--text-muted)"><strong>参考回答：</strong><span class="code-block" style="margin-top:4px">${q.sampleAnswer}</span></div>` : ''}
+  `;
+  document.getElementById('qCard').appendChild(fb);
+
+  const btn = document.createElement('button');
+  btn.className = 'next-btn';
+  btn.textContent = getNextLabel();
+  btn.onclick = nextQuestion;
+  document.getElementById('qCard').appendChild(btn);
+  input.disabled = true;
+  scrollBottom();
+}
+
+function getNextLabel() {
+  const part = PARTS[state.currentPart];
+  const isLastQ = state.currentQ >= part.questions.length - 1;
+  const isLastPart = state.currentPart >= PARTS.length - 1;
+  if (isLastQ && isLastPart) return '📊 查看测试报告';
+  if (isLastQ) return '▶ 下一部分 →';
+  return '▶ 下一题 →';
+}
+
+function nextQuestion() {
+  const part = PARTS[state.currentPart];
+
+  if (state.currentQ < part.questions.length - 1) {
+    // Next question in same part
+    state.currentQ++;
+    const qIndex = state.scores_by_part.slice(0, state.currentPart).reduce((a, p) => a + p.total, 0) + state.currentQ;
+    updateProgress(qIndex, TOTAL_QUESTIONS);
+    renderPartIntro();
+  } else if (state.currentPart < PARTS.length - 1) {
+    // Next part
+    state.currentPart++;
+    state.currentQ = 0;
+    const qIndex = state.scores_by_part.slice(0, state.currentPart).reduce((a, p) => a + p.total, 0);
+    updateProgress(qIndex, TOTAL_QUESTIONS);
+    renderPartIntro();
+  } else {
+    // Done! Show report
+    updateProgress(TOTAL_QUESTIONS, TOTAL_QUESTIONS);
+    showReport();
+  }
+}
+
+async function showReport() {
+  state.phase = 'report';
+  progressWrap.style.display = 'none';
+
+  await aiSay(`<div class="phase-badge">测试完成</div><p>🎉 所有测试部分已完成！正在生成你的薄弱维度分析报告...</p>`, 500);
+
+  const total = state.scores_by_part.reduce((a, p) => a + p.total, 0);
+  const correct = state.scores_by_part.reduce((a, p) => a + p.correct, 0);
+  const pct = Math.round((correct / total) * 100);
+
+  // Determine scores per dimension
+  const dimScores = {
+    pronunciation: { score: 0, label: '发音', icon: '🔊', desc: 'Pronunciation' },
+    structure: { score: 0, label: '结构', icon: '🏗️', desc: 'Structure' },
+    vocabulary: { score: 0, label: '词汇', icon: '📚', desc: 'Vocabulary' },
+    fluency: { score: 0, label: '流利度', icon: '⚡', desc: 'Fluency' },
+    comprehension: { score: 0, label: '理解力', icon: '🧠', desc: 'Comprehension' },
+    interaction: { score: 0, label: '互动能力', icon: '🔗', desc: 'Interaction' }
+  };
+
+  // Map parts to dimensions
+  const dimMap = {
+    0: 'comprehension',
+    1: 'fluency',
+    2: 'vocabulary',
+    3: 'structure',
+    4: 'interaction',
+    5: 'fluency'
+  };
+
+  state.scores_by_part.forEach((p, i) => {
+    const dim = dimMap[i];
+    if (dim && dimScores[dim]) {
+      const dimPct = Math.round((p.correct / p.total) * 100);
+      dimScores[dim].score = dimPct;
+    }
+  });
+
+  // Generate recommendations based on weakest dimensions
+  const sorted = Object.entries(dimScores).sort((a, b) => a[1].score - b[1].score);
+  const weakest = sorted.slice(0, 2);
+  const levelScore = pct;
+
+  let levelText = '';
+  if (levelScore >= 85) levelText = '建议达到 Level 5';
+  else if (levelScore >= 65) levelText = '建议达到 Level 4，冲击 Level 5';
+  else levelText = '建议从 Level 3/4 开始系统学习';
+
+  const recommendations = [];
+  if (weakest[0][0] === 'vocabulary' || weakest[0][0] === 'interaction') {
+    recommendations.push('重点练习 <strong>Paraphrasing（同义改写）</strong>，这是 ICAO 五级的核心区分项，建议每天练习5句 ICAO 900 句型的改写');
+  }
+  if (weakest[0][0] === 'fluency' || weakest[0][0] === 'comprehension') {
+    recommendations.push('多听真实的 <strong>ATC 通话录音</strong>（如 LiveATC.net），每天至少15分钟，熟悉不同口音和语速');
+  }
+  if (weakest[0][0] === 'structure' || weakest[0][0] === 'pronunciation') {
+    recommendations.push('复习 <strong>ICAO 标准通话用语</strong>（ICAO Doc 9432），重点练习复诵格式和数字读法');
+  }
+  if (recommendations.length === 0) {
+    recommendations.push('继续强化 <strong>Paraphrasing</strong> 能力，每天用 ICAO 900 练习同义改写');
+    recommendations.push('多进行<strong>模拟对话</strong>，与语言伙伴或 AI 练习真实 ATC 场景');
+  }
+  recommendations.push('建议使用 <strong>艾宾浩斯记忆曲线</strong>复习，每天3次，每次间隔1h/6h/24h');
+
+  const dimItems = Object.entries(dimScores).map(([key, val]) => {
+    let cls = 'weak';
+    if (val.score >= 80) cls = 'excellent';
+    else if (val.score >= 60) cls = 'good';
+    return `
+      <div class="dim-item">
+        <div class="dim-icon ${cls}">${val.icon}</div>
+        <div class="dim-text">
+          <div class="dim-name">${val.desc}</div>
+          <div class="dim-score ${cls}">${val.score >= 0 ? val.score + '%' : '-'}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const reportHtml = `
+    <div class="report-card">
+      <div class="report-header">
+        <div class="score-big">${pct}%</div>
+        <p>测试总分（参考）</p>
+        <div class="level-band">${levelText}</div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:4px">
+          ICAO 五级有效期 6 年 · 三级有效期 3 年 · 五级显著提升职业竞争力
+        </p>
+      </div>
+      <h3 style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">📊 各维度得分</h3>
+      <div class="report-dimensions">${dimItems}</div>
+      <div class="report-recommendations">
+        <h4>📋 后续学习重点建议</h4>
+        <ol>
+          ${recommendations.map(r => `<li>${r}</li>`).join('')}
+        </ol>
+      </div>
+      <div class="dim-explain">
+        <strong>💡 ICAO Level 4 vs Level 5 核心差异：</strong><br>
+        Level 4 考生能"正确使用标准 ICAO 措辞"；<br>
+        Level 5 考生必须能"灵活运用多种表达方式传递相同信息"——即 <strong>Paraphrasing</strong> 能力，这是五级最核心的评估标准（ICAO Doc 9835, Section 4.3.2）。
+      </div>
+      <button class="restart-btn" onclick="restartTest()">🔄 重新开始测试</button>
+    </div>`;
+
+  await aiSayImmediate(reportHtml);
+}
+
+function restartTest() {
+  chat.innerHTML = '';
+  state = {
+    phase: 'intro',
+    currentPart: 0,
+    currentQ: 0,
+    answers: {},
+    scores_by_part: [],
+    inputMode: null,
+    selectedOption: null,
+    submitted: false,
+    currentTranscript: '',
+    audioPlaying: false
+  };
+  renderIntro();
+}
+
+// ============================================================
+// INPUT HANDLER
+// ============================================================
+document.getElementById('chat').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const active = document.activeElement;
+    if (active && active.tagName === 'TEXTAREA') return;
+  }
+});
+
+function handleUserInput(text) {
+  const trimmed = (text || '').trim().toLowerCase();
+
+  if (state.phase === 'intro') {
+    if (trimmed.includes('开始') || trimmed.includes('考5') || trimmed.includes('考五') || trimmed.includes('test') || trimmed.includes('start')) {
+      renderStructure();
+    } else {
+      addMsg('user', '👤', '你', text);
+      aiSay(`<p>请输入 <strong>"开始测试"</strong> 或 <strong>"考5级"</strong> 开始模拟测试！</p>`);
+    }
+  } else if (state.phase === 'structure') {
+    if (trimmed.includes('开始') || trimmed.includes('好') || trimmed.includes('是') || trimmed.includes('ok') || trimmed.includes('yes') || trimmed.includes('y')) {
+      addMsg('user', '👤', '你', text);
+      startTest();
+    } else {
+      addMsg('user', '👤', '你', text);
+      aiSay(`<p>准备好了吗？输入 <strong>"开始"</strong> 即可正式进入测试！</p>`);
+    }
+  } else if (state.phase === 'test') {
+    // During test, show user's typed answer as text submission if needed
+    if (text.trim()) {
+      addMsg('user', '👤', '你', text);
+    }
+  } else if (state.phase === 'report') {
+    if (trimmed.includes('重新') || trimmed.includes('restart') || trimmed.includes('再来')) {
+      restartTest();
+    } else {
+      addMsg('user', '👤', '你', text);
+      aiSay(`<p>测试已完成！点击下方按钮可以 <strong>重新开始测试</strong>，或继续了解更多 ICAO 英语学习建议。</p>`);
+    }
+  }
+}
+
+// Expose to global for onclick handlers
+window.selectOption = selectOption;
+window.submitChoice = submitChoice;
+window.submitText = submitText;
+window.nextQuestion = nextQuestion;
+window.playAudio = playAudio;
+window.selectTopic = selectTopic;
+window.restartTest = restartTest;
+window.handleUserInput = handleUserInput;
+
+// Input bar
+const inputBar = document.createElement('div');
+inputBar.style.cssText = `
+  position: fixed; bottom: 60px; left: 0; right: 0;
+  background: var(--bg-secondary); border-top: 1px solid var(--border);
+  padding: 12px 20px; display: flex; gap: 10px; flex-shrink: 0;
+  max-width: 820px; margin: 0 auto; z-index: 100;`;
+inputBar.innerHTML = `
+  <input id="userInput" type="text" placeholder="输入你的回答..." autocomplete="off"
+    style="flex:1;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:24px;
+    color:var(--text-primary);padding:10px 16px;font-size:14px;font-family:inherit;outline:none;
+    transition:border-color 0.2s;" />`;
+document.body.appendChild(inputBar);
+
+const userInput = document.getElementById('userInput');
+userInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    const val = this.value.trim();
+    if (!val) return;
+    addMsg('user', '👤', '你', val);
+    this.value = '';
+    handleUserInput(val);
+  }
+});
+userInput.addEventListener('focus', function() { this.style.borderColor = 'var(--accent)'; });
+userInput.addEventListener('blur', function() { this.style.borderColor = 'var(--border)'; });
+
+// ============================================================
+// INIT
+// ============================================================
+// Load voices
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+renderIntro();
+</script>
+</body>
+</html>
