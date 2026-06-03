@@ -1041,17 +1041,33 @@ function speakText(text, callback) {
     callback && callback();
     return;
   }
+  // Cancel any ongoing speech
   window.speechSynthesis.cancel();
+  
+  // On mobile, voices may not be loaded yet - wait for them
+  const voices = window.speechSynthesis.getVoices();
+  
   const utt = new SpeechSynthesisUtterance(text);
   utt.lang = 'en-US';
   utt.rate = 0.85;
   utt.pitch = 1;
-  // Try to find a good voice
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Daniel') || v.name.includes('Google US')));
-  if (preferred) utt.voice = preferred;
+  
+  // Try to find a good English voice (prefer Google/Apple voices)
+  const preferredVoices = [
+    'Google US English', 'Google UK English', 'Samantha', 'Daniel', 
+    'Karen', 'Tessa', 'Zira', 'Microsoft David', 'Microsoft Zira',
+    'Alex', 'Allison', 'Ava', 'Victoria'
+  ];
+  let voice = voices.find(v => v.lang.startsWith('en') && preferredVoices.some(pv => v.name.includes(pv)));
+  if (!voice) voice = voices.find(v => v.lang.startsWith('en'));
+  if (voice) utt.voice = voice;
+  
   utt.onend = callback;
-  utt.onerror = callback;
+  utt.onerror = function(e) {
+    console.warn('Speech synthesis error:', e.error);
+    callback && callback();
+  };
+  
   window.speechSynthesis.speak(utt);
 }
 
@@ -1158,8 +1174,8 @@ function renderPartIntro() {
         <div class="audio-sim" id="audioSim" onclick="playAudio(this)">
           <div class="play-btn">▶</div>
           <div class="audio-sim-text">
-            <strong>点击播放通话录音</strong>
-            <span style="font-size:11px;color:var(--text-muted)">使用语音合成模拟 ATC 通话</span>
+            <strong>🎧 点击播放通话录音</strong>
+            <span class="audio-status" style="font-size:11px;color:var(--text-muted)">点击按钮播放</span>
           </div>
         </div>` : ''}
     </div>
@@ -1241,28 +1257,63 @@ function selectTopic(idx, text) {
 }
 
 let currentAudioText = '';
+// Global audio element for better playback
+let currentAudioEl = null;
+
 function playAudio(el) {
   const part = PARTS[state.currentPart];
   const q = part.questions[state.currentQ];
   currentAudioText = q.audio;
 
   if (state.audioPlaying) {
+    // Stop current playback
+    if (currentAudioEl) {
+      currentAudioEl.pause();
+      currentAudioEl = null;
+    }
     window.speechSynthesis.cancel();
     state.audioPlaying = false;
     el.classList.remove('playing');
-    el.querySelector('.play-btn').textContent = '▶';
-    el.querySelector('.play-btn').style.animation = '';
+    const btn = el.querySelector('.play-btn');
+    if (btn) {
+      btn.textContent = '▶';
+      btn.style.animation = '';
+    }
+    const status = el.querySelector('.audio-status');
+    if (status) status.textContent = '点击重新播放';
     return;
   }
 
+  // Start playing
   el.classList.add('playing');
-  el.querySelector('.play-btn').textContent = '⏸';
+  const btn = el.querySelector('.play-btn');
+  if (btn) {
+    btn.textContent = '⏸';
+    btn.style.animation = 'pulse 1s infinite';
+  }
+  const status = el.querySelector('.audio-status');
+  if (status) status.textContent = '正在播放...';
+
   state.audioPlaying = true;
 
+  // Try Web Speech API (works on mobile too)
   speakText(q.audio, () => {
-    state.audioPlaying = false;
-    el.classList.remove('playing');
-    el.querySelector('.play-btn').textContent = '▶';
+    if (state.audioPlaying) {
+      // Only reset if we're still on this question
+      const part2 = PARTS[state.currentPart];
+      const q2 = part2.questions[state.currentQ];
+      if (q2.audio === currentAudioText) {
+        state.audioPlaying = false;
+        el.classList.remove('playing');
+        const btn2 = el.querySelector('.play-btn');
+        if (btn2) {
+          btn2.textContent = '▶';
+          btn2.style.animation = '';
+        }
+        const status2 = el.querySelector('.audio-status');
+        if (status2) status2.textContent = '播放完毕，可提交答案';
+      }
+    }
   });
 }
 
@@ -1272,7 +1323,12 @@ function selectOption(idx) {
   document.querySelectorAll('.option-btn').forEach((b, i) => {
     b.classList.toggle('selected', i === idx);
   });
-  document.getElementById('submitBtn').disabled = false;
+  const submitBtn = document.getElementById('submitBtn');
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = '1';
+    submitBtn.style.cursor = 'pointer';
+  }
 }
 
 function submitChoice() {
@@ -1302,14 +1358,16 @@ function submitChoice() {
     <div class="feedback-title">${isCorrect ? '✅ 正确！' : '❌ 不正确'}</div>
     <div>${isCorrect ? q.feedback.correct : q.feedback.wrong}</div>
   `;
-  document.getElementById('qCard').appendChild(fb);
+  const qCard = document.getElementById('qCard');
+  if (qCard) qCard.appendChild(fb);
 
   // Next button
   const btn = document.createElement('button');
   btn.className = 'next-btn';
   btn.textContent = getNextLabel();
   btn.onclick = nextQuestion;
-  document.getElementById('qCard').appendChild(btn);
+  const qCard2 = document.getElementById('qCard');
+  if (qCard2) qCard2.appendChild(btn);
   scrollBottom();
 }
 
